@@ -17,7 +17,7 @@ use zkwasm_rest_abi::StorageData;
 use crate::error::*;
 
 
-#[derive (Serialize)]
+#[derive (Serialize, Debug)]
 pub struct State {
     counter: u64,
     current_round: u64, // current game index
@@ -111,6 +111,7 @@ impl State {
     }
 
     pub fn proceed(&mut self, rand: u64) {
+        zkwasm_rust_sdk::dbg!("stat is {:?}\n", self); 
         if self.ratio == 0 {
             if self.prepare == 0 {
                 self.ratio = 100;
