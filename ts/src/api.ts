@@ -1,4 +1,4 @@
-import { PlayerConvention, ZKWasmAppRpc } from "zkwasm-minirollup-rpc";
+import { PlayerConvention, ZKWasmAppRpc, createCommand } from "zkwasm-minirollup-rpc";
 import BN from 'bn.js';
 
 function bytesToHex(bytes: Array<number>): string  {
@@ -35,17 +35,17 @@ export class Player extends PlayerConvention {
   }
 
   async installPlayer() {
-    let cmd = this.createCommand(0n, CMD_INSTALL_PLAYER, []);
+    let cmd = createCommand(0n, CMD_INSTALL_PLAYER, []);
     await this.sendTransactionWithCommand(cmd);
   }
 
   async bet(n: bigint) {
-    let cmd = this.createCommand(0n, CMD_BET_AND_HOLD, [n]);
+    let cmd = createCommand(0n, CMD_BET_AND_HOLD, [n]);
     await this.sendTransactionWithCommand(cmd);
   }
 
   async checkout() {
-    let cmd = this.createCommand(0n, CMD_CHECKOUT, []);
+    let cmd = createCommand(0n, CMD_CHECKOUT, []);
     await this.sendTransactionWithCommand(cmd);
   }
 }
