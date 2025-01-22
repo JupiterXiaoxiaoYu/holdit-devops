@@ -12,17 +12,61 @@ use crate::command::Deposit;
 use crate::command::Withdraw;
 use crate::command::CommandHandler;
 use crate::command::Activity;
+use std::cmp::Ordering;
 use zkwasm_rest_convention::CommonState;
 use zkwasm_rest_abi::StorageData;
 use crate::error::*;
+
+#[derive (Serialize, Debug)]
+pub struct PlayerPosition {
+    pid: [u64; 2],
+    amount: u64,
+    checkout: u64,
+}
 
 
 #[derive (Serialize, Debug)]
 pub struct State {
     counter: u64,
-    current_round: u64, // current game index
+    currentRound: u64, // current game index
     prepare: u64,  // counting down of the next game
     ratio: u64, // current earning ratio, equals zero if the next round is under preparation
+    players: Vec<PlayerPosition>
+}
+
+fn compare(x: &[u64;2], y: &[u64; 2]) -> Ordering {
+    if x[0] > y[0] {
+        Ordering::Greater
+    } else if x[0] == y[0] {
+        if x[1] > y[1] {
+            Ordering::Greater
+        } else if x[1] == y[1] {
+            Ordering::Equal
+        } else {
+            Ordering::Less
+        }
+    } else {
+        Ordering::Less
+    }
+}
+
+impl State {
+    pub fn add_player(&mut self, pid: [u64; 2], amount: u64) {
+        let position = PlayerPosition {
+            pid,
+            amount,
+            checkout: 0,
+        };
+        match self.players.binary_search_by(|x| { compare(&x.pid, &position.pid)}) {
+            Ok(pos) => self.players.insert(pos, position), 
+            Err(pos) => self.players.insert(pos, position),
+        }
+    }
+    pub fn checkout_player(&mut self, pid: [u64; 2], checkout: u64) {
+        let pos = self.players.binary_search_by(|x| { compare(&x.pid, &pid)}).unwrap();
+        let item = self.players.get_mut(pos).unwrap();
+        item.checkout = checkout;
+    }
 }
 
 pub struct SafeState(pub RefCell<State>);
@@ -47,16 +91,15 @@ impl StorageData for State {
     fn from_data(u64data: &mut IterMut<u64>) -> Self {
         State {
             counter: *u64data.next().unwrap(),
-            current_round: *u64data.next().unwrap(),
-            prepare: *u64data.next().unwrap(),
-            ratio: *u64data.next().unwrap()
+            currentRound: *u64data.next().unwrap(),
+            prepare: 10,
+            ratio: 100,
+            players: vec![],
         }
     }
     fn to_data(&self, data: &mut Vec<u64>) {
         data.push(self.counter);
-        data.push(self.current_round);
-        data.push(self.prepare);
-        data.push(self.ratio);
+        data.push(self.currentRound);
     }
 }
 
@@ -68,14 +111,16 @@ impl State {
     pub fn new() -> Self {
         State {
             counter: 0,
-            current_round: 0,
+            currentRound: 0,
             prepare: 10,
-            ratio: 0,
+            ratio: 100,
+            players: vec![],
         }
     }
 
     pub fn preempt() -> bool {
-        return Self::get_global().counter % 100 == 0
+        let state = Self::get_global();
+        state.ratio == 0 && state.prepare == 0
     }
 
     pub fn store() {
@@ -89,8 +134,8 @@ impl State {
 
     /// get the next round if the state is preparing the next round
     pub fn get_next_active_round(&self) -> Result<u64, u32> {
-        if self.ratio == 0 {
-            Ok(self.current_round + 1)
+        if self.prepare > 0 {
+            Ok(self.currentRound + 1)
         } else {
             Err(ERROR_CURRENT_ROUND_STARTED)
         }
@@ -99,7 +144,7 @@ impl State {
     /// get the current round info
     pub fn get_active_round_info(&self) -> Result<(u64, u64), u32> {
         if self.ratio != 0 {
-            Ok((self.current_round, self.ratio))
+            Ok((self.currentRound, self.ratio))
         } else {
             Err(ERROR_CURRENT_ROUND_IN_PREPARATION)
         }
@@ -112,16 +157,13 @@ impl State {
 
     pub fn proceed(&mut self, rand: u64) {
         zkwasm_rust_sdk::dbg!("stat is {:?}\n", self); 
-        if self.ratio == 0 {
+        if self.prepare > 0 {
+            self.prepare -= 1;
             if self.prepare == 0 {
-                self.ratio = 100;
-            } else {
-                self.prepare -= 1;
+                self.currentRound += 1;
             }
         } else {
             if rand & 0xf == 0 {
-                self.prepare = 10;
-                self.current_round += 1;
                 self.ratio = 0;
             } else {
                 self.ratio = (self.ratio * 101) / 100
@@ -175,7 +217,8 @@ impl Transaction {
         match player {
             Some(_) => Err(ERROR_PLAYER_ALREADY_EXIST),
             None => {
-                let player = HITPlayer::new_from_pid(pid);
+                let mut player = HITPlayer::new_from_pid(pid);
+                player.data.balance = 1000;
                 player.store();
                 Ok(()) 
             }

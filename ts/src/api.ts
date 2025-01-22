@@ -36,17 +36,17 @@ export class Player extends PlayerConvention {
 
   async installPlayer() {
     let cmd = createCommand(0n, CMD_INSTALL_PLAYER, []);
-    await this.sendTransactionWithCommand(cmd);
+    return await this.sendTransactionWithCommand(cmd);
   }
 
   async bet(n: bigint) {
     let cmd = createCommand(0n, CMD_BET_AND_HOLD, [n]);
-    await this.sendTransactionWithCommand(cmd);
+    return await this.sendTransactionWithCommand(cmd);
   }
 
   async checkout() {
     let cmd = createCommand(0n, CMD_CHECKOUT, []);
-    await this.sendTransactionWithCommand(cmd);
+    return await this.sendTransactionWithCommand(cmd);
   }
 }
 

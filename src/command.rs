@@ -42,12 +42,17 @@ impl CommandHandler for Activity {
                 match self {
                     Activity::Bet(amount) => {
                         let next_round = State::get_global().get_next_active_round()?;
-                        player.data.place(*amount, next_round)
+                        player.data.place(*amount, next_round)?;
+                        player.store();
+                        State::get_global_mut().add_player(pid.clone(), *amount);
+                        Ok(())
                     },
                     Activity::Checkout => {
                         let (round, ratio) = State::get_global().get_active_round_info()?;
                         // This is the selected player; allow them to open the blind box
-                        player.data.checkout(ratio, round)?;
+                        player.data.checkout(round, ratio)?;
+                        player.store();
+                        State::get_global_mut().checkout_player(pid.clone(), ratio);
                         Ok(())
                     }
                 }
