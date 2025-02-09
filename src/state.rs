@@ -1,5 +1,8 @@
+use crate::command::clear_events;
 use crate::player::HITPlayer;
 use crate::config::ADMIN_PUBKEY;
+use serde::ser::SerializeSeq;
+use serde::Serializer;
 use zkwasm_rust_sdk::require;
 use serde::Serialize;
 use crate::settlement::SettlementInfo;
@@ -17,8 +20,20 @@ use zkwasm_rest_convention::CommonState;
 use zkwasm_rest_abi::StorageData;
 use crate::error::*;
 
+fn serialize_u64_as_string<S>(value: &[u64; 2], serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let mut seq = serializer.serialize_seq(Some(2))?;
+    for num in value {
+        seq.serialize_element(&num.to_string())?;
+    }
+    seq.end()
+}
+
 #[derive (Serialize, Debug)]
 pub struct PlayerPosition {
+    #[serde(serialize_with = "serialize_u64_as_string")]
     pid: [u64; 2],
     amount: u64,
     checkout: u64,
@@ -220,12 +235,13 @@ impl Transaction {
                 let mut player = HITPlayer::new_from_pid(pid);
                 player.data.balance = 1000;
                 player.store();
-                Ok(()) 
+                Ok(())
             }
         }
     }
 
     pub fn process(&self, pkey: &[u64; 4], rand: &[u64; 4]) -> Vec<u64> {
+        zkwasm_rust_sdk::dbg!("process...\n");
         let pid = HITPlayer ::pkey_to_pid(&pkey);
         let error_code = match &self.command {
             Command::Tick=> {
@@ -248,6 +264,9 @@ impl Transaction {
                 unreachable!();
             }
         };
-        vec![error_code as u64]
+        let counter = State::get_global().counter;
+        unsafe {
+            clear_events(vec![error_code as u64, counter])
+        }
     }
 }

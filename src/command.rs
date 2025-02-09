@@ -33,6 +33,25 @@ pub enum Activity {
     Checkout,
 }
 
+pub static mut EVENTS: Vec<u64> = vec![];
+const EVENT_BET: u64 = 1;
+const EVENT_CHECKOUT: u64 = 2;
+
+pub fn clear_events(a: Vec<u64>) -> Vec<u64> {
+    let mut c = a;
+    unsafe {
+        c.append(&mut EVENTS);
+    }
+    return c;
+}
+
+pub fn insert_event(typ: u64, data: &mut Vec<u64>) {
+    unsafe {
+        EVENTS.push((typ << 32) + data.len() as u64);
+        EVENTS.append(data);
+    }
+}
+
 impl CommandHandler for Activity {
     fn handle(&self, pid: &[u64; 2], nonce: u64, rand: &[u64; 4]) -> Result<(), u32> {
         let mut player = HITPlayer::get_from_pid(pid);
@@ -42,17 +61,24 @@ impl CommandHandler for Activity {
                 match self {
                     Activity::Bet(amount) => {
                         let next_round = State::get_global().get_next_active_round()?;
-                        player.data.place(*amount, next_round)?;
-                        player.store();
-                        State::get_global_mut().add_player(pid.clone(), *amount);
-                        Ok(())
+                        if (player.data.lastBetRound < next_round) {
+                            player.data.place(*amount, next_round)?;
+                            player.store();
+                            State::get_global_mut().add_player(pid.clone(), *amount);
+                            insert_event(EVENT_BET, &mut vec![player.player_id[0], player.player_id[1], next_round, *amount, 0]);
+                            Ok(())
+                        } else {
+                            Err(ERROR_CURRENT_BET_NOT_FINISHED)
+                        }
                     },
                     Activity::Checkout => {
                         let (round, ratio) = State::get_global().get_active_round_info()?;
+                        let amount = player.data.lastBet;
                         // This is the selected player; allow them to open the blind box
-                        player.data.checkout(round, ratio)?;
+                        let checkout = player.data.checkout(round, ratio)?;
                         player.store();
                         State::get_global_mut().checkout_player(pid.clone(), ratio);
+                        insert_event(EVENT_CHECKOUT, &mut vec![player.player_id[0], player.player_id[1], round, amount, checkout]);
                         Ok(())
                     }
                 }

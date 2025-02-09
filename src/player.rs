@@ -37,12 +37,13 @@ impl PlayerData {
             Err(ERROR_PLAYER_NOT_IN_CURRENT_ROUND)
         }
     }
-    pub fn checkout(&mut self, current_round: u64, ratio: u64) -> Result <(), u32> {
+    pub fn checkout(&mut self, current_round: u64, ratio: u64) -> Result <u64, u32> {
         if self.lastBetRound == current_round {
-            self.balance += (self.lastBet * ratio) / 100;
-            self.lastBet= 0;
+            let inc = (self.lastBet * ratio) / 100;
+            self.balance += inc;
+            self.lastBet = 0;
             self.lastBetRound = 0;
-            Ok(())
+            Ok(inc)
         } else {
             Err(ERROR_PLAYER_NOT_IN_CURRENT_ROUND)
         }
