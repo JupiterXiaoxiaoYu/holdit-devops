@@ -132,9 +132,22 @@ COPY --from=builder /app/src/admin.pubkey ./src/admin.pubkey
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # Set correct permissions
-RUN chmod +x ts/publish.sh && \
-    chown -R appuser:appuser /app && \
-    chmod -R u+rw /app
+RUN for i in {1..3}; do \
+      echo "Attempt $i to publish image..." && \
+      output=$(ts/publish.sh 2>&1) && \
+      echo "$output" && \
+      if echo "$output" | grep -q "already exists\|Add Image Response"; then \
+        echo "Successfully published image" && \
+        break; \
+      else \
+        if [ $i -eq 3 ]; then \
+          echo "Failed to publish image after 3 attempts" && \
+          exit 1; \
+        fi; \
+        echo "Retrying in 5 seconds..." && \
+        sleep 5; \
+      fi; \
+    done
 
 # Switch to non-root user
 USER appuser
