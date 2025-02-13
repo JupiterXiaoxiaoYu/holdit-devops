@@ -171,7 +171,7 @@ impl State {
     }
 
     pub fn proceed(&mut self, rand: u64) {
-        zkwasm_rust_sdk::dbg!("stat is {:?}\n", self); 
+        zkwasm_rust_sdk::dbg!("state is {:?}\n", self); 
         if self.prepare > 0 {
             self.prepare -= 1;
             if self.prepare == 0 {
