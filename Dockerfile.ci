@@ -84,7 +84,7 @@ RUN echo "check rust version" && \
 
 # Run publish script with retries
 RUN chmod +x ts/publish.sh && \
-    for i in {1..3}; do \
+    for i in 1 2 3; do \
       echo "----------------------------------------" && \
       echo "Starting attempt $i to publish image..." && \
       echo "Running: ts/publish.sh" && \
