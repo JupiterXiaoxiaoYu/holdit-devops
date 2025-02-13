@@ -89,14 +89,15 @@ RUN ls -la ts/ && \
     echo "Current working directory:" && \
     pwd && \
     chmod +x ts/publish.sh && \
+    cd ts && \
     for i in 1 2 3; do \
       echo "----------------------------------------" && \
       echo "Starting attempt $i to publish image..." && \
-      echo "Running: ts/publish.sh" && \
+      echo "Running: publish.sh" && \
       echo "----------------------------------------" && \
       echo "Before executing script" && \
-      ts/publish.sh || echo "Script exit code: $?" && \
-      output=$(ts/publish.sh 2>&1) && \
+      ./publish.sh || echo "Script exit code: $?" && \
+      output=$(./publish.sh 2>&1) && \
       echo "Command output:" && \
       echo "$output" && \
       echo "----------------------------------------" && \
