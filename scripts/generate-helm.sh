@@ -48,6 +48,10 @@ image:
   pullPolicy: IfNotPresent
   tag: "latest"  # 可以是 latest 或 MD5 值
 
+# 添加 ingress 配置
+ingress:
+  host: "${CHART_NAME}.zkwasm.ai"
+
 # 应用配置
 config:
   mongodb:
@@ -371,6 +375,32 @@ spec:
       name: redis
   selector:
     app: {{ include "${CHART_NAME}.fullname" . }}-redis
+EOL
+
+# 生成 ingress.yaml
+cat > ${CHART_PATH}/templates/ingress.yaml << EOL
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "${CHART_NAME}.fullname" . }}
+  labels:
+    {{- include "${CHART_NAME}.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    # 如果需要去除 /rpc 前缀，添加以下注解
+    # nginx.ingress.kubernetes.io/rewrite-target: /\$2
+spec:
+  rules:
+  - host: "{{ .Values.ingress.host }}"
+    http:
+      paths:
+      - path: /rpc
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ include "${CHART_NAME}.fullname" . }}
+            port:
+              number: {{ .Values.service.port }}
 EOL
 
 # 使脚本可执行
