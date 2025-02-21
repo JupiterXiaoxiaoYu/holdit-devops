@@ -6,6 +6,10 @@ image:
   pullPolicy: IfNotPresent
   tag: "latest"  # 可以是 latest 或 MD5 值
 
+# 添加 ingress 配置
+ingress:
+  host: "holdit-devops.zkwasm.ai"
+
 # 应用配置
 config:
   mongodb:
