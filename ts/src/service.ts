@@ -2,7 +2,7 @@ import { Service } from "zkwasm-ts-server";
 import { Express } from "express";
 import { TxWitness} from "zkwasm-ts-server/src/prover";
 import { Position, PositionModel } from "./info.js";
-import { Event, EventModel } from "./info.js";
+import { Event, EventModel } from "zkwasm-ts-server";
 
 const comments = new Array();
 
