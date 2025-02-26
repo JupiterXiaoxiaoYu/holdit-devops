@@ -52,8 +52,12 @@ image:
 # 添加 ingress 配置
 ingress:
   enabled: true
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  # TLS 配置
+  tls:
+    enabled: true
   # 域名配置
   domain:
     base: "zkwasm.ai"
@@ -409,10 +413,17 @@ metadata:
     nginx.ingress.kubernetes.io/cors-allow-credentials: "{{ .Values.ingress.cors.allowCredentials }}"
     nginx.ingress.kubernetes.io/cors-max-age: "{{ .Values.ingress.cors.maxAge }}"
     {{- end }}
+    cert-manager.io/cluster-issuer: letsencrypt-prod
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+  - hosts:
+    - "{{ .Values.ingress.domain.prefix }}.{{ .Release.Namespace }}.{{ .Values.ingress.domain.base }}"
+    secretName: "{{ .Release.Name }}-tls"
+  {{- end }}
   rules:
   - host: "{{ .Values.ingress.domain.prefix }}.{{ .Release.Namespace }}.{{ .Values.ingress.domain.base }}"
     http:

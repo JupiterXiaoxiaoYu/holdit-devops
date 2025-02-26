@@ -9,8 +9,12 @@ image:
 # 添加 ingress 配置
 ingress:
   enabled: true
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  # TLS 配置
+  tls:
+    enabled: true
   # 域名配置
   domain:
     base: "zkwasm.ai"
