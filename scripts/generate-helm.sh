@@ -403,11 +403,11 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     {{- if .Values.ingress.cors.enabled }}
-    nginx.ingress.kubernetes.io/cors-allow-origin: {{ .Values.ingress.cors.allowOrigins }}
-    nginx.ingress.kubernetes.io/cors-allow-methods: {{ .Values.ingress.cors.allowMethods }}
-    nginx.ingress.kubernetes.io/cors-allow-headers: {{ .Values.ingress.cors.allowHeaders }}
-    nginx.ingress.kubernetes.io/cors-allow-credentials: {{ .Values.ingress.cors.allowCredentials }}
-    nginx.ingress.kubernetes.io/cors-max-age: {{ .Values.ingress.cors.maxAge }}
+    nginx.ingress.kubernetes.io/cors-allow-origin: "{{ .Values.ingress.cors.allowOrigins }}"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "{{ .Values.ingress.cors.allowMethods }}"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "{{ .Values.ingress.cors.allowHeaders }}"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "{{ .Values.ingress.cors.allowCredentials }}"
+    nginx.ingress.kubernetes.io/cors-max-age: "{{ .Values.ingress.cors.maxAge }}"
     {{- end }}
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
