@@ -2,6 +2,7 @@
 
 # 设置变量
 CHART_NAME="holdit-devops"
+ALLOWED_ORIGINS="*" # 多个域名用逗号分隔
 CHART_PATH="./helm-charts/${CHART_NAME}"
 
 # 创建必要的目录
@@ -50,7 +51,21 @@ image:
 
 # 添加 ingress 配置
 ingress:
-  host: "${CHART_NAME}.zkwasm.ai"
+  enabled: true
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+  # 域名配置
+  domain:
+    base: "zkwasm.ai"
+    prefix: "rpc"  # 生成 rpc.namespace.zkwasm.ai
+  # CORS 配置
+  cors:
+    enabled: true
+    allowOrigins: "${ALLOWED_ORIGINS}"
+    allowMethods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
+    allowHeaders: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+    allowCredentials: "true"
+    maxAge: "1728000"
 
 # 应用配置
 config:
@@ -387,14 +402,22 @@ metadata:
     {{- include "${CHART_NAME}.labels" . | nindent 4 }}
   annotations:
     kubernetes.io/ingress.class: nginx
-    # 如果需要去除 /rpc 前缀，添加以下注解
-    # nginx.ingress.kubernetes.io/rewrite-target: /\$2
+    {{- if .Values.ingress.cors.enabled }}
+    nginx.ingress.kubernetes.io/cors-allow-origin: {{ .Values.ingress.cors.allowOrigins }}
+    nginx.ingress.kubernetes.io/cors-allow-methods: {{ .Values.ingress.cors.allowMethods }}
+    nginx.ingress.kubernetes.io/cors-allow-headers: {{ .Values.ingress.cors.allowHeaders }}
+    nginx.ingress.kubernetes.io/cors-allow-credentials: {{ .Values.ingress.cors.allowCredentials }}
+    nginx.ingress.kubernetes.io/cors-max-age: {{ .Values.ingress.cors.maxAge }}
+    {{- end }}
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   rules:
-  - host: "{{ .Values.ingress.host }}"
+  - host: "{{ .Values.ingress.domain.prefix }}.{{ .Release.Namespace }}.{{ .Values.ingress.domain.base }}"
     http:
       paths:
-      - path: /rpc
+      - path: /
         pathType: Prefix
         backend:
           service:
