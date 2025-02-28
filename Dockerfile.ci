@@ -6,39 +6,11 @@ WORKDIR /app
 # 复制项目文件
 COPY . .
 
-# 创建必要的目录
-RUN mkdir -p ts/node_modules/zkwasm-ts-server/src/application
+# 先安装 npm 依赖
+RUN cd ts && npm install
 
 # 复制预构建的 WASM 文件
 COPY build-artifacts/application/* ts/node_modules/zkwasm-ts-server/src/application/
-
-# 安装 npm 依赖但不编译 TypeScript（可能需要先安装一些依赖）
-RUN cd ts && npm install
-
-# 确保 zkwasm-ts-server 模块存在
-RUN if [ ! -d "ts/node_modules/zkwasm-ts-server" ]; then \
-      echo "zkwasm-ts-server module not found, installing..." && \
-      cd ts && npm install zkwasm-ts-server || echo "Failed to install zkwasm-ts-server, but continuing..."; \
-    fi
-
-# 复制 zkwasm-ts-server 源码（如果有的话）
-RUN if [ -d "zkwasm-ts-server" ]; then \
-      echo "Copying zkwasm-ts-server source code..." && \
-      cp -r zkwasm-ts-server/* ts/node_modules/zkwasm-ts-server/ || echo "Failed to copy zkwasm-ts-server source code, but continuing..."; \
-    fi
-
-# 显示目录结构以便调试
-RUN echo "Directory structure:" && \
-    ls -la ts/node_modules && \
-    echo "zkwasm-ts-server directory:" && \
-    ls -la ts/node_modules/zkwasm-ts-server/src || echo "zkwasm-ts-server/src directory not found"
-
-# 尝试编译 TypeScript
-RUN cd ts && \
-    echo "TypeScript files:" && \
-    find . -name "*.ts" | sort && \
-    echo "Compiling TypeScript..." && \
-    npx tsc || echo "TypeScript compilation failed, but continuing..."
 
 # Run publish script with retries (if needed)
 RUN if [ -f ts/publish.sh ]; then \
@@ -81,7 +53,7 @@ ENV NODE_ENV="production"
 
 WORKDIR /app
 
-# Copy all necessary files from builder
+# Copy only necessary files from builder
 COPY --from=builder /app/ts ./ts
 COPY --from=builder /app/src/admin.pubkey ./src/admin.pubkey
 
