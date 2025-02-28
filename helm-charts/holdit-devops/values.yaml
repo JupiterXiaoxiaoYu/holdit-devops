@@ -30,6 +30,11 @@ ingress:
 
 # 应用配置
 config:
+  app:
+    deploy: "true"
+    remote: "true"
+    autoSubmit: ""
+    image: "CE37CF0DF6D52E3A6D4A0357123FBF39"
   mongodb:
     enabled: true
     image:

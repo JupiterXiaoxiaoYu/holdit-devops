@@ -4,6 +4,12 @@
 CHART_NAME="holdit-devops"
 ALLOWED_ORIGINS="*" # 多个域名用逗号分隔
 CHART_PATH="./helm-charts/${CHART_NAME}"
+DEPLOY_VALUE="true" 
+REMOTE_VALUE="true" 
+AUTO_SUBMIT_VALUE="" # 默认为空
+IMAGE_VALUE="CE37CF0DF6D52E3A6D4A0357123FBF39"
+
+echo "Using IMAGE_VALUE: ${IMAGE_VALUE}"
 
 # 创建必要的目录
 mkdir -p ${CHART_PATH}/templates
@@ -73,6 +79,11 @@ ingress:
 
 # 应用配置
 config:
+  app:
+    deploy: "${DEPLOY_VALUE}"
+    remote: "${REMOTE_VALUE}"
+    autoSubmit: "${AUTO_SUBMIT_VALUE}"
+    image: "${IMAGE_VALUE}"
   mongodb:
     enabled: true
     image:
@@ -157,6 +168,19 @@ spec:
           value: "{{ .Values.config.redis.port }}"
         - name: MERKLE_SERVER
           value: http://{{ include "${CHART_NAME}.fullname" . }}-merkle:{{ .Values.config.merkle.port }}
+        - name: SERVER_ADMIN_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: SERVER_ADMIN_KEY
+        - name: DEPLOY
+          value: "{{ .Values.config.app.deploy | default "true" }}"
+        - name: REMOTE
+          value: "{{ .Values.config.app.remote | default "true" }}"
+        - name: AUTO_SUBMIT
+          value: "{{ .Values.config.app.autoSubmit | default "" }}"
+        - name: IMAGE
+          value: "{{ .Values.config.app.image | default "" }}"
         ports:
         - containerPort: 3000
           name: http
